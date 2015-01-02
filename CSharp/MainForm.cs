@@ -52,13 +52,13 @@ namespace LEDLCDOLED
             {
                 delay++;
                 UpdateTextDelegate d = new UpdateTextDelegate(UpdateText);
-                ldelay.Invoke(d);
+                ldelay.BeginInvoke(d);
             }
             else
             {
                 fcnt = (byte)c;
                 UpdateFifoDelegate d = new UpdateFifoDelegate(UpdateFifo);
-                lfifo.Invoke(d);
+                lfifo.BeginInvoke(d);
             }
         }
 
