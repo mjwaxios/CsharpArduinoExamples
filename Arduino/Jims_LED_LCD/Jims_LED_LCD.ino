@@ -1,11 +1,13 @@
+// List of includes
 #include <FastLED.h>
 #include <Wire.h>
 #include <LCD.h>
 #include <LiquidCrystal_I2C.h>
-
 #include <SPI.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+
+#define VERSION 0.72
 
 #define OLED_RESET 4
 Adafruit_SSD1306 display(OLED_RESET);
@@ -15,11 +17,14 @@ Adafruit_SSD1306 display(OLED_RESET);
 struct CRGB leds[LED_COUNT];
 LiquidCrystal_I2C lcd(0x3F, 2, 1, 0, 4, 5, 6 ,7);
 
-#define VERSION 0.50
+long last_time;
+bool Overflow = false;
+int MaxFifo = 0; // Hold the largest Fifo Size
 
 void setup()
 { 
   // Serial
+  last_time = 0;
   Serial.begin(115200);
 
  // LCD Text
@@ -51,7 +56,7 @@ void setup()
   display.setCursor(0,35);
   display.print("Mode:");
   display.display();
-  
+
   // LEDS
   LEDS.addLeds<WS2812B, PIN, GRB>(leds, LED_COUNT);
   LEDS.showColor(CRGB(0, 0, 0));
@@ -59,9 +64,11 @@ void setup()
   LEDS.show(); 
 }
 
-// Do Nothing, Everything in Events
-void loop() {
-  ;
+// Send the Ready Signal
+void SignalReady() {
+  last_time = millis();
+  Serial.write('R');
+  Serial.write(MaxFifo);
 }
 
 // Read from the Serial port and display on LED strip
@@ -75,54 +82,51 @@ void UpdateMode(uint8_t m) {
   if (m != Mode) {
     Mode = m;
     if (Mode == 100) {
-      lcd.clear();
-      lcd.print("GoodBye....");
+//      lcd.clear();
+//      lcd.print("GoodBye....");
+/*      
       display.clearDisplay();
       display.setTextSize(2);
       display.setCursor(0,0);
       display.print("Goodbye...");
       display.display();
+*/      
     } else {
-      lcd.setCursor(0,3);
-      lcd.print("Mode :    ");
-      lcd.setCursor(7, 3);
-      lcd.print(Mode);
-      delay(5);
+//      lcd.setCursor(0,3);
+//      lcd.print("Mode :    ");
+//      lcd.setCursor(7, 3);
+//      lcd.print(Mode);
+//      delay(5);
 
-      display.setCursor(90,35);      
-      display.print(Mode);
-      display.display();
+//      display.setCursor(90,35);      
+//      display.print(Mode);
+//      display.display();
     }
   }
 }
 
-void DisplayOverflow() {
-    display.setCursor(90,35);      
-    display.print("Ovr");
-    display.display();
-}
-
 // Check Serial Port Fifo Size
-bool Overflow = false;
-int MaxFifo = 0; // Hold the largest Fifo Size
 void UpdateMaxFifo() {
   int fifocnt = Serial.available();
   // Check if the incomming fifo is full, if so we may have overflowed, can't find a real way 
   // to tell so this will have to do
-  if (fifocnt == 64) {
+  if (fifocnt == 63) {
     Overflow = true;
-    display.setCursor(90,35);      
-    display.print("Ovr");
-    display.display();
-  }
- 
+    Serial.write('S');
+    MaxFifo = 0;
+//    display.setCursor(90,35);      
+//    display.print("Ovr");
+//    display.display();
+  } 
+  
   if (fifocnt > MaxFifo) {
     MaxFifo = fifocnt;
-    display.setTextSize(1);
-    display.setCursor(100,30);      
-    display.print(MaxFifo);
-    display.display();
-    display.setTextSize(3);
+//    display.setTextSize(1);
+//    display.setCursor(0,16);      
+//    display.print("Fifo: ");
+//    display.print(MaxFifo);
+//    display.display();
+//    display.setTextSize(3);
     
     lcd.setCursor(0,2);
     lcd.print("Fifo : ");
@@ -130,7 +134,7 @@ void UpdateMaxFifo() {
   }
 }
 
-void serialEvent() {
+void DoRead() {
   UpdateMaxFifo();
   uint8_t c = Serial.read();     
   if (LookForMode == true) {
@@ -144,8 +148,9 @@ void serialEvent() {
       if (Overflow == false) {
         LEDS.show();
         delay(5);
+        SignalReady(); 
       } else {
-        DisplayOverflow();
+        Overflow = false;
       }
       Overflow = false;
     } else {
@@ -160,7 +165,17 @@ void serialEvent() {
       } // index 3
     } // Color Pixel
   } // LookForMode
-} // serialEvent
+}
+
+// Do Nothing, Everything in Events
+void loop() {
+  if ((millis() - last_time) > 1000) {
+    SignalReady(); 
+  }
+  if (Serial.available()) {
+    DoRead();
+  }
+}
 
 
 
