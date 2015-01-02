@@ -7,7 +7,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-#define VERSION 0.72
+#define VERSION 0.73
 
 #define OLED_RESET 4
 Adafruit_SSD1306 display(OLED_RESET);
