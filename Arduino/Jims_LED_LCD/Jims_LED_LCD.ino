@@ -1,28 +1,22 @@
-// List of includes
-#include <FastLED.h>
-#include <Wire.h>
-#include <LCD.h>
-#include <LiquidCrystal_I2C.h>
-#include <SPI.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
-#include <OneWire.h>
-#include <DallasTemperature.h>
-
-#define VERSION 0.80
-
 #define USE_OLED
 #define USE_LCD
 #define USE_DS18B20
 #define USE_LEDS
 
+#define VERSION 0.81
+
 #ifdef USE_OLED
+#include <Wire.h>
+#include <SPI.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 // For OLED
 #define OLED_RESET 4
 Adafruit_SSD1306 display(OLED_RESET);
 #endif
 
 #ifdef USE_LEDS
+#include <FastLED.h>
 // For LED
 #define PIN 6
 #define LED_COUNT 150
@@ -30,11 +24,16 @@ struct CRGB leds[LED_COUNT];
 #endif
 
 #ifdef USE_LCD
+#include <Wire.h>
+#include <LCD.h>
+#include <LiquidCrystal_I2C.h>
 // For LCD
 LiquidCrystal_I2C lcd(0x3F, 2, 1, 0, 4, 5, 6 ,7);
 #endif
 
 #ifdef USE_DS18B20
+#include <OneWire.h>
+#include <DallasTemperature.h>
 // Temperature
 // Data wire is plugged into port 2 on the Arduino
 #define ONE_WIRE_BUS 2
@@ -42,6 +41,8 @@ LiquidCrystal_I2C lcd(0x3F, 2, 1, 0, 4, 5, 6 ,7);
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 #endif
+
+#include "Arduino.h"       // for delayMicroseconds, digitalPinToBitMask, etc
 
 long last_time;
 bool Overflow = false;
