@@ -9,7 +9,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-#define VERSION 0.75
+#define VERSION 0.76
 
 // For OLED
 #define OLED_RESET 4
@@ -145,9 +145,9 @@ void UpdateMaxFifo() {
 //    display.display();
 //    display.setTextSize(3);
     
-    lcd.setCursor(0,2);
-    lcd.print("Fifo : ");
-    lcd.print(MaxFifo);
+//    lcd.setCursor(0,2);
+//    lcd.print("Fifo : ");
+//    lcd.print(MaxFifo);
   }
 }
 
@@ -186,8 +186,12 @@ void DoRead() {
 
 void UpdateTemp() {
   float temp = sensors.getTempFByIndex(0);
+  lcd.setCursor(0,2);
+  lcd.print("Temp 1:  "); 
+  lcd.print(temp); 
+  temp = sensors.getTempFByIndex(1);
   lcd.setCursor(0,3);
-  lcd.print("Temp:  "); 
+  lcd.print("Temp 2:  "); 
   lcd.print(temp); 
 }
 
@@ -198,6 +202,7 @@ void loop() {
   if ((millis() - last_temp) > 1000) {
     UpdateTemp(); 
     sensors.requestTemperaturesByIndex(0); // Send the command to get temperature
+    sensors.requestTemperaturesByIndex(1); // Send the command to get temperature
     last_temp = millis();
   }
   if ((millis() - last_time) > 1000) {
