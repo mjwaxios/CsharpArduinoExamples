@@ -1,9 +1,15 @@
 #define USE_OLED
-#define USE_LCD
-#define USE_DS18B20
+//#define USE_LCD
+//#define USE_DS18B20
 #define USE_LEDS
+//#define USE_SERVO
 
-#define VERSION 0.81
+#define VERSION 0.83
+
+#ifdef USE_SERVO
+#include <Servo.h>
+Servo HS55;
+#endif
 
 #ifdef USE_OLED
 #include <Wire.h>
@@ -48,11 +54,19 @@ long last_time;
 bool Overflow = false;
 int MaxFifo = 0; // Hold the largest Fifo Size
 
+//------------------------------------------------------------------------------------------------------
+//                                        SETUP
+//------------------------------------------------------------------------------------------------------
 void setup()
 { 
   // Serial
   last_time = 0;
   Serial.begin(115200);
+
+#ifdef USE_SERVO
+  HS55.attach(9); 
+  HS55.write(90);
+#endif
 
 #ifdef USE_DS18B20
   // For DS18B20
@@ -103,6 +117,8 @@ void setup()
 #endif  
 }
 
+//------------------------------------------------------------------------------------------------------
+
 // Send the Ready Signal
 void SignalReady() {
   last_time = millis();
@@ -116,6 +132,8 @@ int colorIndex;
 uint8_t col[3]; 
 bool LookForMode;
 uint8_t Mode = 0;
+
+//------------------------------------------------------------------------------------------------------
 
 void UpdateMode(uint8_t m) {
   if (m != Mode) {
@@ -173,6 +191,8 @@ void UpdateMaxFifo() {
   }
 }
 
+//------------------------------------------------------------------------------------------------------
+
 void DoRead() {
   UpdateMaxFifo();
   uint8_t c = Serial.read();     
@@ -210,10 +230,16 @@ void DoRead() {
   } // LookForMode
 }
 
+//------------------------------------------------------------------------------------------------------
+
 #ifdef USE_DS18B20
 void UpdateTemp() {
   float temp0 = sensors.getTempFByIndex(0);
   float temp1 = sensors.getTempFByIndex(1);
+#ifdef USE_SERVO
+  HS55.write(temp0);
+#endif
+
 #ifdef USE_LCD
   lcd.setCursor(0,2);
   lcd.print("Temp 1:  "); 
@@ -225,6 +251,10 @@ void UpdateTemp() {
 }
 #endif
 
+
+//------------------------------------------------------------------------------------------------------
+//                                        LOOP
+//------------------------------------------------------------------------------------------------------
 long last_temp = 0;
 // Do Nothing, Everything in Events
 void loop() {
