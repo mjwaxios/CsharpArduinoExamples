@@ -6,16 +6,29 @@
 #include <SPI.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 
-#define VERSION 0.73
+#define VERSION 0.75
 
+// For OLED
 #define OLED_RESET 4
 Adafruit_SSD1306 display(OLED_RESET);
 
+// For LED
 #define PIN 6
 #define LED_COUNT 150
 struct CRGB leds[LED_COUNT];
+
+// For LCD
 LiquidCrystal_I2C lcd(0x3F, 2, 1, 0, 4, 5, 6 ,7);
+
+// Temperature
+// Data wire is plugged into port 2 on the Arduino
+#define ONE_WIRE_BUS 2
+#define TEMPERATURE_PRECISION 9
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
 
 long last_time;
 bool Overflow = false;
@@ -27,6 +40,10 @@ void setup()
   last_time = 0;
   Serial.begin(115200);
 
+  // For DS18B20
+  sensors.begin();
+  sensors.setWaitForConversion(false);
+  
  // LCD Text
   lcd.begin (20,4,LCD_5x8DOTS);
   lcd.setBacklightPin(3, POSITIVE);
@@ -167,14 +184,28 @@ void DoRead() {
   } // LookForMode
 }
 
+void UpdateTemp() {
+  float temp = sensors.getTempFByIndex(0);
+  lcd.setCursor(0,3);
+  lcd.print("Temp:  "); 
+  lcd.print(temp); 
+}
+
+long last_temp = 0;
 // Do Nothing, Everything in Events
 void loop() {
+    // Update Temp
+  if ((millis() - last_temp) > 1000) {
+    UpdateTemp(); 
+    sensors.requestTemperaturesByIndex(0); // Send the command to get temperature
+    last_temp = millis();
+  }
   if ((millis() - last_time) > 1000) {
     SignalReady(); 
   }
   if (Serial.available()) {
     DoRead();
-  }
+  } 
 }
 
 

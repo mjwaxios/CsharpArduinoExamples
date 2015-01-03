@@ -439,7 +439,7 @@ namespace LEDLCDOLED
                 {
                     int size = Math.Min(blocksize, data.Length - chunk);
                     p.Write(data, chunk, size);
-                    Thread.Sleep(delay);
+                    Thread.Sleep(4);
                     chunk += size;
                 }
             } // if Ready
