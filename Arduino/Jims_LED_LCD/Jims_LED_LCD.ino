@@ -1,10 +1,17 @@
 #define USE_OLED
-//#define USE_LCD
+#define USE_LCD
 //#define USE_DS18B20
 #define USE_LEDS
 //#define USE_SERVO
+#define USE_DS1307   // RTC
 
-#define VERSION 0.83
+#define VERSION 0.84
+
+#ifdef USE_DS1307
+  #include<Wire.h>
+  #include<RTClib.h>
+  RTC_DS1307 rtc;
+#endif
 
 #ifdef USE_SERVO
 #include <Servo.h>
@@ -63,6 +70,16 @@ void setup()
   last_time = 0;
   Serial.begin(115200);
 
+#ifdef USE_DS1307
+  Wire.begin();
+  rtc.begin();
+  if (! rtc.isrunning()) {
+    Serial.println("RTC is NOT running!"); 
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  }
+  DateTime now = rtc.now();
+#endif
+
 #ifdef USE_SERVO
   HS55.attach(9); 
   HS55.write(90);
@@ -85,6 +102,14 @@ void setup()
   lcd.print("  Version:  ");
   lcd.print(VERSION);
   lcd.setCursor(0,0);
+  #ifdef USE_DS1307
+    lcd.setCursor(0,3);
+    lcd.print(now.hour());
+    lcd.print(":");
+    lcd.print(now.minute());
+    lcd.print(":");
+    lcd.print(now.second());
+  #endif
 #endif
 
 #ifdef USE_OLED
@@ -101,10 +126,6 @@ void setup()
   display.setCursor(65,8);
   display.print("Ver: ");
   display.println(VERSION);
-  
-  display.setTextSize(3);
-  display.setCursor(0,35);
-  display.print("Mode:");
   display.display();
 #endif
 
@@ -251,13 +272,46 @@ void UpdateTemp() {
 }
 #endif
 
+void UpdateClock() {
+#ifdef USE_DS1307
+  DateTime now = rtc.now();
+  #ifdef USE_LCD
+    lcd.setCursor(0,3);
+    lcd.print(now.hour());
+    lcd.print(":");
+    lcd.print(now.minute());
+    lcd.print(":");
+    lcd.print(now.second());
+  #endif
+  #ifdef USE_OLED
+    display.setTextSize(2);
+    display.setCursor(0,32);
+    display.println("Time: ");
+    display.print(now.hour());
+    display.print(":");
+    display.print(now.minute());
+    display.print(":");
+    display.print(now.second());
+    display.display();  
+  #endif
+#endif
+}
 
 //------------------------------------------------------------------------------------------------------
 //                                        LOOP
 //------------------------------------------------------------------------------------------------------
 long last_temp = 0;
+long last_clk = 0;
+
 // Do Nothing, Everything in Events
 void loop() {
+#ifdef USE_DS1307
+  if ((millis() - last_clk) > 1000) {
+    UpdateClock();
+    last_clk = millis();
+  }
+#endif
+  
 #ifdef USE_DS18B20
     // Update Temp
   if ((millis() - last_temp) > 1000) {
